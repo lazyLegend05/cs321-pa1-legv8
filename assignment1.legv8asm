@@ -1,16 +1,17 @@
 // CS321 Programming Assignment 1
 // Team Members:
-// Tanisha - tmagikar@iastate.edu
-// Aadi Shah - aadishah@iastate.edu
+// Tanisha - tmagikar
+// Aadi Shah - aadishah
+
 main:
-    MOVZ X0, #100
-    MOVZ X1, #10
+    ADDI X0, XZR, #100
+    ADDI X1, XZR, #10
     BL fill_array
     DUMP
     HALT
 
 fill_array:
-    MOVZ X2, #0
+    ADDI X2, XZR, #0
 
 fill_loop:
     SUBS XZR, X2, X1
