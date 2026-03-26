@@ -1,39 +1,62 @@
-// CS321 Programming Assignment 1
-// Team Members:
-// Tanisha - tmagikar@iastate.edu
-// Aadi Shah - aadishah@iastate.edu
 
 main:
-    // fill array a[0..9] at memory base 128
-    ADDI X0, XZR, #128
-    ADDI X1, XZR, #10
+    ADDI X0, XZR, #0          
+    ADDI X1, XZR, #512        
+    ADDI X2, XZR, #42         
     BL fill_array
 
-    // swap a[0] and a[1]
-    ADDI X0, XZR, #128
-    ADDI X1, XZR, #0
-    ADDI X2, XZR, #1
-    BL swap
-
-    // sort array
-    ADDI X0, XZR, #128
-    ADDI X1, XZR, #10
+    ADDI X0, XZR, #0
+    ADDI X1, XZR, #512
     BL local_sort
 
-    // test binary_search
-    // args used by teammate's binary_search:
-    // X0 = base, X1 = left, X2 = right, X3 = target
-    ADDI X0, XZR, #128
-    ADDI X1, XZR, #0
-    ADDI X2, XZR, #9
-    ADDI X3, XZR, #5
-    BL binary_search
-    PRNT X0
-    PRNL
+    ADDI X19, XZR, #0         
 
-    DUMP
+search_all_loop:
+    SUBS XZR, X19, X1         
+    B.GE search_missing_tests
+
+    LSL X10, X19, #3
+    ADD X10, X10, XZR         
+    ADD X11, X0, X10
+    LDUR X2, [X11, #0]        
+
+    ADDI X0, XZR, #0
+    ADDI X1, XZR, #512
+    BL binary_search
+    CBZ X0, fail
+
+    ADDI X19, X19, #1
+    B search_all_loop
+
+search_missing_tests:
+    ADDI X0, XZR, #0
+    LDUR X9, [X0, #0]
+    SUBI X2, X9, #1
+    ADDI X1, XZR, #512
+    BL binary_search
+    CBNZ X0, fail
+
+    ADDI X0, XZR, #0
+    LDUR X9, [X0, #0]
+    ADDI X2, X9, #1
+    ADDI X1, XZR, #512
+    BL binary_search
+    CBNZ X0, fail
+
+    ADDI X0, XZR, #0
+    ADDI X9, XZR, #511
+    LSL X9, X9, #3
+    ADD X9, X0, X9
+    LDUR X10, [X9, #0]
+    ADDI X2, X10, #1
+    ADDI X1, XZR, #512
+    BL binary_search
+    CBNZ X0, fail
+
     HALT
 
+fail:
+    HALT
 
 fill_array:
     ADDI X2, XZR, #0
