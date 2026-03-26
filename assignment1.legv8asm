@@ -1,22 +1,36 @@
 // CS321 Programming Assignment 1
+// Tanisha Magikar: tmagikar@iastate.edu
+// Aadi Shah: aadishah@iastate.edu
 
 main:
+    // fill array a[0..9] at memory base 100
     ADDI X0, XZR, #100
     ADDI X1, XZR, #10
     BL fill_array
 
+    // swap a[0] and a[1]
     ADDI X0, XZR, #100
     ADDI X1, XZR, #0
     ADDI X2, XZR, #1
     BL swap
 
-    ADDI X0, XZR, #0   // change to 1 or 2 for testing
+    // test is_locally_sorted
+    ADDI X0, XZR, #0
     ADDI X1, XZR, #100
     ADDI X2, XZR, #10
     BL is_locally_sorted
-
     PRNT X0
     PRNL
+
+    // test binary_search
+    ADDI X0, XZR, #100
+    ADDI X1, XZR, #0
+    ADDI X2, XZR, #9
+    ADDI X3, XZR, #5
+    BL binary_search
+    PRNT X0
+    PRNL
+
     DUMP
     HALT
 
@@ -74,6 +88,7 @@ is_locally_sorted:
     LDUR X5, [X1, #8]
     SUBS XZR, X4, X5
     B.LE ils_true
+    B ils_false
 
 check_last:
     SUBI X6, X2, #1
@@ -90,6 +105,7 @@ check_last:
     LDUR X10, [X8, #8]
     SUBS XZR, X9, X10
     B.LE ils_true
+    B ils_false
 
 check_middle:
     SUBI X11, X0, #1
@@ -118,4 +134,59 @@ ils_true:
 
 ils_false:
     ADDI X0, XZR, #0
+    BR LR
+
+binary_search:
+    SUBI SP, SP, #32
+    STUR LR,  [SP, #24]
+    STUR X19, [SP, #16]
+    STUR X20, [SP, #8]
+
+    ADD X19, X0, XZR      
+    ADD X9,  X1, XZR      
+    ADD X10, X2, XZR      
+    ADD X20, X3, XZR     
+
+    SUBS XZR, X10, X9
+    B.LT outside_range
+
+    ADD X11, X9, X10
+    LSR X11, X11, #1
+
+    LSL X12, X11, #3
+    ADD X12, X12, X19
+    LDUR X13, [X12, #0]
+
+    SUBS XZR, X13, X20
+    B.EQ found_value
+    B.GT search_left
+
+search_right:
+    ADD X0, X19, XZR
+    ADDI X1, X11, #1
+    ADD X2, X10, XZR
+    ADD X3, X20, XZR
+    BL binary_search
+    B done
+
+search_left:
+    ADD X0, X19, XZR
+    ADD X1, X9, XZR
+    SUBI X2, X11, #1
+    ADD X3, X20, XZR
+    BL binary_search
+    B done
+
+found_value:
+    ADD X0, X11, XZR      
+    B done
+
+outside_range:
+    ADDI X0, XZR, #-1
+
+done:
+    LDUR X20, [SP, #8]
+    LDUR X19, [SP, #16]
+    LDUR LR,  [SP, #24]
+    ADDI SP, SP, #32
     BR LR
