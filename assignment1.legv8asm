@@ -3,5 +3,26 @@
 // Tanisha - tmagikar@iastate.edu
 // Aadi Shah - aadishah@iastate.edu
 main:
-    PRNL
+    MOVZ X0, #100
+    MOVZ X1, #10
+    BL fill_array
+    DUMP
     HALT
+
+fill_array:
+    MOVZ X2, #0
+
+fill_loop:
+    SUBS XZR, X2, X1
+    B.GE fill_done
+
+    LSL X3, X2, #3
+    ADD X4, X0, X3
+    ADD X5, X2, XZR
+    STUR X5, [X4, #0]
+
+    ADDI X2, X2, #1
+    B fill_loop
+
+fill_done:
+    BR LR
