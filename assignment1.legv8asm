@@ -1,24 +1,26 @@
 // CS321 Programming Assignment 1
-// Team Members:
-// Tanisha - tmagikar
-// Aadi Shah - aadishah
 
 main:
-    ADDI X0, XZR, #100   // base address
-    ADDI X1, XZR, #10    // size
+    ADDI X0, XZR, #100
+    ADDI X1, XZR, #10
     BL fill_array
 
-    // NOW set swap args
-    ADDI X1, XZR, #0     // idx1
-    ADDI X2, XZR, #1     // idx2
+    ADDI X0, XZR, #100
+    ADDI X1, XZR, #0
+    ADDI X2, XZR, #1
     BL swap
 
+    ADDI X0, XZR, #0   // change to 1 or 2 for testing
+    ADDI X1, XZR, #100
+    ADDI X2, XZR, #10
+    BL is_locally_sorted
+
+    PRNT X0
+    PRNL
     DUMP
     HALT
 
-// fill_array(a, n)
-// X0 = base address
-// X1 = size
+
 fill_array:
     ADDI X2, XZR, #0
 
@@ -26,15 +28,11 @@ fill_loop:
     SUBS XZR, X2, X1
     B.GE fill_done
 
-    // X3 = i * 8
     ADD X3, X2, X2
     ADD X3, X3, X3
     ADD X3, X3, X3
 
-    // X4 = base + offset
     ADD X4, X0, X3
-
-    // store value i
     ADD X5, X2, XZR
     STUR X5, [X4, #0]
 
@@ -45,27 +43,79 @@ fill_done:
     BR LR
 
 
-// swap(a, idx1, idx2)
-// X0 = base
-// X1 = idx1
-// X2 = idx2
 swap:
-    // X3 = idx1 * 8
     ADD X3, X1, X1
     ADD X3, X3, X3
     ADD X3, X3, X3
     ADD X3, X0, X3
 
-    // X4 = idx2 * 8
     ADD X4, X2, X2
     ADD X4, X4, X4
     ADD X4, X4, X4
     ADD X4, X0, X4
 
-    // swap values
     LDUR X5, [X3, #0]
     LDUR X6, [X4, #0]
     STUR X6, [X3, #0]
     STUR X5, [X4, #0]
 
+    BR LR
+
+
+is_locally_sorted:
+    SUBI X3, X2, #1
+    SUBS XZR, X3, XZR
+    B.LE ils_true
+
+    SUBS XZR, X0, XZR
+    B.NE check_last
+
+    LDUR X4, [X1, #0]
+    LDUR X5, [X1, #8]
+    SUBS XZR, X4, X5
+    B.LE ils_true
+
+check_last:
+    SUBI X6, X2, #1
+    SUBS XZR, X0, X6
+    B.NE check_middle
+
+    SUBI X7, X2, #2
+    ADD X8, X7, X7
+    ADD X8, X8, X8
+    ADD X8, X8, X8
+    ADD X8, X1, X8
+
+    LDUR X9, [X8, #0]
+    LDUR X10, [X8, #8]
+    SUBS XZR, X9, X10
+    B.LE ils_true
+
+check_middle:
+    SUBI X11, X0, #1
+    ADD X12, X11, X11
+    ADD X12, X12, X12
+    ADD X12, X12, X12
+    ADD X12, X1, X12
+
+    LDUR X13, [X12, #0]
+    LDUR X14, [X12, #8]
+    LDUR X15, [X12, #16]
+
+    SUB X16, X13, X14
+    SUBS XZR, X16, XZR
+    B.GT ils_false
+
+    SUB X16, X14, X15
+    SUBS XZR, X16, XZR
+    B.GT ils_false
+
+    B ils_true
+
+ils_true:
+    ADDI X0, XZR, #1
+    BR LR
+
+ils_false:
+    ADDI X0, XZR, #0
     BR LR
