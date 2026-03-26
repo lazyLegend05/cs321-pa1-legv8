@@ -4,12 +4,21 @@
 // Aadi Shah - aadishah
 
 main:
-    ADDI X0, XZR, #100
-    ADDI X1, XZR, #10
+    ADDI X0, XZR, #100   // base address
+    ADDI X1, XZR, #10    // size
     BL fill_array
+
+    // NOW set swap args
+    ADDI X1, XZR, #0     // idx1
+    ADDI X2, XZR, #1     // idx2
+    BL swap
+
     DUMP
     HALT
 
+// fill_array(a, n)
+// X0 = base address
+// X1 = size
 fill_array:
     ADDI X2, XZR, #0
 
@@ -17,8 +26,15 @@ fill_loop:
     SUBS XZR, X2, X1
     B.GE fill_done
 
-    LSL X3, X2, #3
+    // X3 = i * 8
+    ADD X3, X2, X2
+    ADD X3, X3, X3
+    ADD X3, X3, X3
+
+    // X4 = base + offset
     ADD X4, X0, X3
+
+    // store value i
     ADD X5, X2, XZR
     STUR X5, [X4, #0]
 
@@ -26,4 +42,30 @@ fill_loop:
     B fill_loop
 
 fill_done:
+    BR LR
+
+
+// swap(a, idx1, idx2)
+// X0 = base
+// X1 = idx1
+// X2 = idx2
+swap:
+    // X3 = idx1 * 8
+    ADD X3, X1, X1
+    ADD X3, X3, X3
+    ADD X3, X3, X3
+    ADD X3, X0, X3
+
+    // X4 = idx2 * 8
+    ADD X4, X2, X2
+    ADD X4, X4, X4
+    ADD X4, X4, X4
+    ADD X4, X0, X4
+
+    // swap values
+    LDUR X5, [X3, #0]
+    LDUR X6, [X4, #0]
+    STUR X6, [X3, #0]
+    STUR X5, [X4, #0]
+
     BR LR
