@@ -1,62 +1,76 @@
+// CS321 Programming Assignment 1
+// Team Members:
+// Tanisha - tmagikar@iastate.edu
+// Aadi Shah - aadishah@iastate.edu
 
 main:
-    ADDI X0, XZR, #0          
-    ADDI X1, XZR, #512        
-    ADDI X2, XZR, #42         
+    // base = 0, n = 512
+    ADDI X22, XZR, #0
+    ADDI X21, XZR, #512
+
+    // fill array
+    ADD X0, X22, XZR
+    ADD X1, X21, XZR
     BL fill_array
 
-    ADDI X0, XZR, #0
-    ADDI X1, XZR, #512
+    // sort array
+    ADD X0, X22, XZR
+    ADD X1, X21, XZR
     BL local_sort
 
-    ADDI X19, XZR, #0         
+    // test binary_search on every value in the array
+    ADDI X19, XZR, #0
 
 search_all_loop:
-    SUBS XZR, X19, X1         
+    SUBS XZR, X19, X21
     B.GE search_missing_tests
 
+    // target = a[i]
     LSL X10, X19, #3
-    ADD X10, X10, XZR         
-    ADD X11, X0, X10
-    LDUR X2, [X11, #0]        
+    ADD X11, X22, X10
+    LDUR X3, [X11, #0]
 
-    ADDI X0, XZR, #0
-    ADDI X1, XZR, #512
+    // binary_search(base, left=0, right=n-1, target)
+    ADD X0, X22, XZR
+    ADDI X1, XZR, #0
+    SUBI X2, X21, #1
     BL binary_search
-    CBZ X0, fail
+
+    // returned index must equal i
+    SUBS XZR, X0, X19
+    B.NE fail
 
     ADDI X19, X19, #1
     B search_all_loop
 
 search_missing_tests:
-    ADDI X0, XZR, #0
-    LDUR X9, [X0, #0]
-    SUBI X2, X9, #1
-    ADDI X1, XZR, #512
+    // search for -1 -> should return -1
+    ADD X0, X22, XZR
+    ADDI X1, XZR, #0
+    SUBI X2, X21, #1
+    ADDI X3, XZR, #-1
     BL binary_search
-    CBNZ X0, fail
 
-    ADDI X0, XZR, #0
-    LDUR X9, [X0, #0]
-    ADDI X2, X9, #1
-    ADDI X1, XZR, #512
-    BL binary_search
-    CBNZ X0, fail
+    ADDI X9, XZR, #-1
+    SUBS XZR, X0, X9
+    B.NE fail
 
-    ADDI X0, XZR, #0
-    ADDI X9, XZR, #511
-    LSL X9, X9, #3
-    ADD X9, X0, X9
-    LDUR X10, [X9, #0]
-    ADDI X2, X10, #1
-    ADDI X1, XZR, #512
+    // search for 512 -> should return -1
+    ADD X0, X22, XZR
+    ADDI X1, XZR, #0
+    SUBI X2, X21, #1
+    ADDI X3, XZR, #512
     BL binary_search
-    CBNZ X0, fail
+
+    ADDI X9, XZR, #-1
+    SUBS XZR, X0, X9
+    B.NE fail
 
     HALT
 
 fail:
     HALT
+
 
 fill_array:
     ADDI X2, XZR, #0
@@ -143,6 +157,12 @@ done_sort:
     BR LR
 
 
+// binary_search(base, left, right, target)
+// X0 = base
+// X1 = left
+// X2 = right
+// X3 = target
+// returns X0 = index if found, -1 otherwise
 binary_search:
     SUBI SP, SP, #32
     STUR LR, [SP, #24]
@@ -154,16 +174,20 @@ binary_search:
     ADD X10, X2, XZR
     ADD X20, X3, XZR
 
+    // if right < left, return -1
     SUBS XZR, X10, X9
     B.LT outside_range
 
+    // mid = (left + right) / 2
     ADD X11, X9, X10
     LSR X11, X11, #1
 
+    // a[mid]
     LSL X12, X11, #3
     ADD X12, X12, X19
     LDUR X13, [X12, #0]
 
+    // compare a[mid] with target
     SUBS XZR, X13, X20
     B.EQ found_value
     B.GT search_left
