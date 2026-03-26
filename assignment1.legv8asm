@@ -1,26 +1,29 @@
+// CS321 Programming Assignment 1
+// Team Members:
+// Tanisha - tmagikar@iastate.edu
+// Aadi Shah - aadishah@iastate.edu
 
 main:
-    // fill array a[0..9] at memory base 100
-    ADDI X0, XZR, #100
+    // fill array a[0..9] at memory base 128
+    ADDI X0, XZR, #128
     ADDI X1, XZR, #10
     BL fill_array
 
     // swap a[0] and a[1]
-    ADDI X0, XZR, #100
+    ADDI X0, XZR, #128
     ADDI X1, XZR, #0
     ADDI X2, XZR, #1
     BL swap
 
-    // test is_locally_sorted
-    ADDI X0, XZR, #0
-    ADDI X1, XZR, #100
-    ADDI X2, XZR, #10
-    BL is_locally_sorted
-    PRNT X0
-    PRNL
+    // sort array
+    ADDI X0, XZR, #128
+    ADDI X1, XZR, #10
+    BL local_sort
 
     // test binary_search
-    ADDI X0, XZR, #100
+    // args used by teammate's binary_search:
+    // X0 = base, X1 = left, X2 = right, X3 = target
+    ADDI X0, XZR, #128
     ADDI X1, XZR, #0
     ADDI X2, XZR, #9
     ADDI X3, XZR, #5
@@ -42,8 +45,8 @@ fill_loop:
     ADD X3, X2, X2
     ADD X3, X3, X3
     ADD X3, X3, X3
-
     ADD X4, X0, X3
+
     ADD X5, X2, XZR
     STUR X5, [X4, #0]
 
@@ -73,76 +76,60 @@ swap:
     BR LR
 
 
-is_locally_sorted:
-    SUBI X3, X2, #1
-    SUBS XZR, X3, XZR
-    B.LE ils_true
+local_sort:
+    SUBI SP, SP, #16
+    STUR LR, [SP, #8]
+    STUR X19, [SP, #0]
 
-    SUBS XZR, X0, XZR
-    B.NE check_last
+    ADD X19, X0, XZR
+    ADD X20, X1, XZR
 
-    LDUR X4, [X1, #0]
-    LDUR X5, [X1, #8]
-    SUBS XZR, X4, X5
-    B.LE ils_true
-    B ils_false
+outer_pass:
+    SUBI X20, X20, #1
+    SUBS XZR, X20, XZR
+    B.LE done_sort
 
-check_last:
-    SUBI X6, X2, #1
-    SUBS XZR, X0, X6
-    B.NE check_middle
+    ADDI X10, XZR, #0
 
-    SUBI X7, X2, #2
-    ADD X8, X7, X7
-    ADD X8, X8, X8
-    ADD X8, X8, X8
-    ADD X8, X1, X8
+inner_loop:
+    SUBS XZR, X10, X20
+    B.GE outer_pass
 
-    LDUR X9, [X8, #0]
-    LDUR X10, [X8, #8]
-    SUBS XZR, X9, X10
-    B.LE ils_true
-    B ils_false
-
-check_middle:
-    SUBI X11, X0, #1
-    ADD X12, X11, X11
+    ADD X12, X10, X10
     ADD X12, X12, X12
     ADD X12, X12, X12
-    ADD X12, X1, X12
+    ADD X12, X19, X12
 
     LDUR X13, [X12, #0]
     LDUR X14, [X12, #8]
-    LDUR X15, [X12, #16]
 
-    SUB X16, X13, X14
-    SUBS XZR, X16, XZR
-    B.GT ils_false
+    SUBS X15, X13, X14
+    B.LE no_swap
 
-    SUB X16, X14, X15
-    SUBS XZR, X16, XZR
-    B.GT ils_false
+    STUR X14, [X12, #0]
+    STUR X13, [X12, #8]
 
-    B ils_true
+no_swap:
+    ADDI X10, X10, #1
+    B inner_loop
 
-ils_true:
-    ADDI X0, XZR, #1
+done_sort:
+    LDUR X19, [SP, #0]
+    LDUR LR, [SP, #8]
+    ADDI SP, SP, #16
     BR LR
 
-ils_false:
-    ADDI X0, XZR, #0
-    BR LR
 
 binary_search:
     SUBI SP, SP, #32
-    STUR LR,  [SP, #24]
+    STUR LR, [SP, #24]
     STUR X19, [SP, #16]
     STUR X20, [SP, #8]
 
-    ADD X19, X0, XZR      
-    ADD X9,  X1, XZR      
-    ADD X10, X2, XZR      
-    ADD X20, X3, XZR     
+    ADD X19, X0, XZR
+    ADD X9, X1, XZR
+    ADD X10, X2, XZR
+    ADD X20, X3, XZR
 
     SUBS XZR, X10, X9
     B.LT outside_range
@@ -164,7 +151,7 @@ search_right:
     ADD X2, X10, XZR
     ADD X3, X20, XZR
     BL binary_search
-    B done
+    B done_bs
 
 search_left:
     ADD X0, X19, XZR
@@ -172,18 +159,18 @@ search_left:
     SUBI X2, X11, #1
     ADD X3, X20, XZR
     BL binary_search
-    B done
+    B done_bs
 
 found_value:
-    ADD X0, X11, XZR      
-    B done
+    ADD X0, X11, XZR
+    B done_bs
 
 outside_range:
     ADDI X0, XZR, #-1
 
-done:
+done_bs:
     LDUR X20, [SP, #8]
     LDUR X19, [SP, #16]
-    LDUR LR,  [SP, #24]
+    LDUR LR, [SP, #24]
     ADDI SP, SP, #32
     BR LR
