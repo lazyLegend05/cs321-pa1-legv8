@@ -3,19 +3,22 @@
 // Aadi Shah: aadishah@iastate.edu
 
 main:
-    ADDI X22, XZR, #0          
-    ADDI X21, XZR, #512        
-    ADDI X20, XZR, #42         
+    ADDI X22, XZR, #0          // a base address = 0
+    ADDI X21, XZR, #512        // n = SIZE
+    ADDI X20, XZR, #42         // seed = 42
 
+    // fill_array(a, n, seed)
     ADD X0, X22, XZR
     ADD X1, X21, XZR
     ADD X2, X20, XZR
     BL fill_array
 
+    // local_sort(a, n)
     ADD X0, X22, XZR
     ADD X1, X21, XZR
     BL local_sort
 
+    // for (i = 0; i < n; i++) if (!binary_search(a, n, a[i])) HALT;
     ADDI X19, XZR, #0
 
 main_search_all_loop:
@@ -24,10 +27,10 @@ main_search_all_loop:
 
     LSL X10, X19, #3
     ADD X11, X22, X10
-    LDUR X3, [X11, #0]         
+    LDUR X3, [X11, #0]         // value = a[i]
 
-    ADD X0, X22, XZR          
-    ADD X1, X21, XZR          
+    ADD X0, X22, XZR          // a
+    ADD X1, X21, XZR          // n
     BL binary_search
 
     SUBS XZR, X0, XZR
@@ -37,6 +40,7 @@ main_search_all_loop:
     B main_search_all_loop
 
 main_search_missing_tests:
+    // test a[0] - 1
     LDUR X9, [X22, #0]
     SUBI X3, X9, #1
     ADD X0, X22, XZR
@@ -45,6 +49,7 @@ main_search_missing_tests:
     SUBS XZR, X0, XZR
     B.NE fail
 
+    // test a[0] + 1
     LDUR X9, [X22, #0]
     ADDI X3, X9, #1
     ADD X0, X22, XZR
@@ -53,6 +58,7 @@ main_search_missing_tests:
     SUBS XZR, X0, XZR
     B.NE fail
 
+    // test a[n - 1] + 1
     SUBI X10, X21, #1
     LSL X10, X10, #3
     ADD X11, X22, X10
@@ -70,22 +76,23 @@ fail:
     HALT
 
 
+// void fill_array(unsigned long *a, unsigned long n, unsigned long seed)
 fill_array:
-    ADDI X3, XZR, #4095        
+    ADDI X3, XZR, #4095        // m = 0x000...0fff
     LSL X3, X3, #12
     ADDI X4, XZR, #4095
     ORR X3, X3, X4
     LSL X3, X3, #7
     ADDI X4, XZR, #127
-    ORR X3, X3, X4             
+    ORR X3, X3, X4             // X3 = 0x7fffffff
 
-    ADDI X4, XZR, #0          
+    ADDI X4, XZR, #0           // i = 0
 
 fill_array_loop:
     SUBS XZR, X4, X1
     B.GE fill_array_done
 
-    ADD X5, X2, XZR            
+    ADD X5, X2, XZR            // x = seed
 
     LSL X6, X2, #2
     ADD X5, X5, X6
@@ -137,11 +144,11 @@ fill_array_loop:
     ADDI X5, X5, #2047
     ADDI X5, X5, #63
 
-    AND X2, X5, X3             
+    AND X2, X5, X3             // seed = x & m
 
     LSL X6, X4, #3
     ADD X7, X0, X6
-    STUR X2, [X7, #0]         
+    STUR X2, [X7, #0]          // a[i] = seed
 
     ADDI X4, X4, #1
     B fill_array_loop
@@ -150,12 +157,13 @@ fill_array_done:
     BR LR
 
 
+// void swap(unsigned long *a, unsigned long idx1, unsigned long idx2)
 swap:
     LSL X3, X1, #3
-    ADD X3, X0, X3            
+    ADD X3, X0, X3             // &a[idx1]
 
     LSL X4, X2, #3
-    ADD X4, X0, X4             
+    ADD X4, X0, X4             // &a[idx2]
 
     LDUR X5, [X3, #0]
     LDUR X6, [X4, #0]
@@ -165,11 +173,14 @@ swap:
     BR LR
 
 
+// unsigned long is_locally_sorted(unsigned long i, unsigned long *a, unsigned long n)
 is_locally_sorted:
+    // if (n <= 1) return 1;
     SUBI X9, X2, #1
     SUBS XZR, X9, XZR
     B.LE ils_true
 
+    // if (!i) return (a[0] <= a[1]);
     SUBS XZR, X0, XZR
     B.NE ils_check_last
 
@@ -180,6 +191,7 @@ is_locally_sorted:
     B ils_false
 
 ils_check_last:
+    // if (i == n - 1) return (a[n-2] <= a[n-1]);
     SUBI X9, X2, #1
     SUBS XZR, X0, X9
     B.NE ils_middle
@@ -194,13 +206,14 @@ ils_check_last:
     B ils_false
 
 ils_middle:
+    // return ((a[i-1] <= a[i]) && (a[i] <= a[i+1]));
     SUBI X12, X0, #1
     LSL X12, X12, #3
-    ADD X12, X1, X12           
+    ADD X12, X1, X12           // &a[i-1]
 
-    LDUR X10, [X12, #0]        
-    LDUR X11, [X12, #8]       
-    LDUR X13, [X12, #16]       
+    LDUR X10, [X12, #0]        // a[i-1]
+    LDUR X11, [X12, #8]        // a[i]
+    LDUR X13, [X12, #16]       // a[i+1]
 
     SUBS XZR, X10, X11
     B.GT ils_false
@@ -217,6 +230,7 @@ ils_false:
     BR LR
 
 
+// void local_sort(unsigned long *a, unsigned long n)
 local_sort:
     SUBI SP, SP, #40
     STUR LR,  [SP, #32]
@@ -225,16 +239,17 @@ local_sort:
     STUR X21, [SP, #8]
     STUR X22, [SP, #0]
 
-    ADD X19, X0, XZR           
-    ADD X20, X1, XZR           
+    ADD X19, X0, XZR           // a
+    ADD X20, X1, XZR           // n
 
 local_sort_outer:
-    ADDI X21, XZR, #0          
+    ADDI X21, XZR, #0          // i = 0
 
 local_sort_for:
     SUBS XZR, X21, X20
     B.GE local_sort_check_done
 
+    // is_locally_sorted(i, a, n)
     ADD X0, X21, XZR
     ADD X1, X19, XZR
     ADD X2, X20, XZR
@@ -243,14 +258,15 @@ local_sort_for:
     SUBS XZR, X0, XZR
     B.NE local_sort_for_next
 
+    // if ((i != 0) && (a[i-1] > a[i])) swap(a, i-1, i);
     SUBS XZR, X21, XZR
     B.EQ local_sort_swap_right
 
     SUBI X10, X21, #1
     LSL X10, X10, #3
     ADD X10, X19, X10
-    LDUR X11, [X10, #0]        
-    LDUR X12, [X10, #8]        
+    LDUR X11, [X10, #0]        // a[i-1]
+    LDUR X12, [X10, #8]        // a[i]
 
     SUBS XZR, X11, X12
     B.GT local_sort_swap_left
@@ -274,11 +290,13 @@ local_sort_for_next:
     B local_sort_for
 
 local_sort_after_break:
+    // broke out of for-loop; check if i == n
     SUBS XZR, X21, X20
     B.EQ local_sort_done
     B local_sort_outer
 
 local_sort_check_done:
+    // if i == n, break
     SUBS XZR, X21, X20
     B.EQ local_sort_done
     B local_sort_outer
@@ -293,6 +311,7 @@ local_sort_done:
     BR LR
 
 
+// unsigned long binary_search(unsigned long *a, unsigned long n, unsigned long value)
 binary_search:
     SUBI SP, SP, #40
     STUR LR,  [SP, #32]
@@ -301,16 +320,18 @@ binary_search:
     STUR X21, [SP, #8]
     STUR X22, [SP, #0]
 
-    ADD X19, X0, XZR          
-    ADD X20, X1, XZR           
-    ADD X21, X3, XZR          
+    ADD X19, X0, XZR           // a
+    ADD X20, X1, XZR           // n
+    ADD X21, X3, XZR           // value
 
+    // if (n == 0) return 0;
     SUBS XZR, X20, XZR
     B.NE bs_check_one
     ADDI X0, XZR, #0
     B bs_done
 
 bs_check_one:
+    // if (n == 1) return a[0] == value;
     SUBI X9, X20, #1
     SUBS XZR, X9, XZR
     B.NE bs_general
@@ -322,28 +343,34 @@ bs_check_one:
     B bs_done
 
 bs_general:
+    // mid = n >> 1
     LSR X22, X20, #1
 
     LSL X10, X22, #3
     ADD X10, X19, X10
-    LDUR X11, [X10, #0]       
+    LDUR X11, [X10, #0]        // a[mid]
 
+    // if (a[mid] == value) return 1;
     SUBS XZR, X11, X21
     B.EQ bs_return_true
 
+    // if (a[mid] > value) return binary_search(a, n >> 1, value);
     B.GT bs_left
 
+    // else compute even
     ANDI X12, X20, #1
     SUBS XZR, X12, XZR
     B.EQ bs_even_case
 
+    // n odd -> even = 0
     ADDI X12, XZR, #0
     B bs_right_recurse
 
 bs_even_case:
-    ADDI X12, XZR, #1         
+    ADDI X12, XZR, #1          // even = 1
 
 bs_right_recurse:
+    // binary_search(a + mid + 1, mid - even, value)
     ADDI X13, X22, #1
     LSL X13, X13, #3
     ADD X0, X19, X13
